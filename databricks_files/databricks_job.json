@@ -1,0 +1,10 @@
+{
+  "name": "Testowy_job",
+  "existing_cluster_id": "0306-105029-sumac823",
+  "timeout_seconds": 0,
+  "notebook_task": {
+    "notebook_path": "/Users/Cluster_Setup",
+    "revision_timestamp": 0
+  },
+  "max_concurrent_runs": 1
+}

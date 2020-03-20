@@ -1,0 +1,13 @@
+{
+  "cluster_name": "lab-cluster",
+  "spark_version": "6.3.x-scala2.11",
+  "node_type_id": "Standard_DS3_v2",
+  "autotermination_minutes": 120,
+  "num_workers": 1,
+  "spark_env_vars": {
+    "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+  },
+  "spark.databricks.delta.preview.enabled": "true",
+  "init_scripts_safe_mode": false,
+  "enable_elastic_disk": true
+}

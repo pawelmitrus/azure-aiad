@@ -1,0 +1,38 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "defaultValue": "myv2datafactory"
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Location for your data factory"
+            }
+        }
+    },
+    "variables": {
+        "v_factoryName": "[concat(toLower(parameters('factoryName')), uniqueString(resourceGroup().id))]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-06-01",
+            "name": "[variables('v_factoryName')]",
+            "location": "[parameters('location')]",
+            "type": "Microsoft.DataFactory/factories",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {}
+        }
+    ],
+    "outputs": {
+        "adfName": {
+            "type": "string",
+            "value": "[variables('v_factoryName')]"
+        }
+    }
+}

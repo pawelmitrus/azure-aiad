@@ -1,0 +1,92 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "type": "string"
+        },
+        "location": {
+            "type": "string"
+        },
+        "defaultExperience": {
+            "type": "string"
+        },
+        "isZoneRedundant": {
+            "type": "string"
+        },
+        "databaseName": {
+            "type": "string"
+        },
+        "databaseThroughput": {
+            "type": "int"
+        },
+        "containerName": {
+            "type": "string"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "apiVersion": "2019-12-12",
+            "kind": "GlobalDocumentDB",
+            "type": "Microsoft.DocumentDb/databaseAccounts",
+            "name": "[parameters('name')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "databaseAccountOfferType": "Standard",
+                "enableMultipleWriteLocations": false,
+                "isVirtualNetworkFilterEnabled": false,
+                "virtualNetworkRules": [],
+                "ipRangeFilter": "",
+                "dependsOn": [],
+                "capabilities": []
+            },
+            "tags": {
+                "defaultExperience": "[parameters('defaultExperience')]",
+                "hidden-cosmos-mmspecial": ""
+            }
+        },
+        {
+			"type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+			"name": "[concat(parameters('name'), '/', parameters('databaseName'))]",
+			"apiVersion": "2019-08-01",
+			"dependsOn": [ "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('name'))]" ],
+			"properties":{
+				"resource":{
+					"id": "[parameters('databaseName')]"
+				},
+				"options": { "throughput": "[parameters('databaseThroughput')]" }
+			}
+        },
+        {
+			"type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+			"name": "[concat(parameters('name'), '/', parameters('databaseName'), '/', parameters('containerName'))]",
+			"apiVersion": "2019-08-01",
+			"dependsOn": [ "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', parameters('name'), parameters('databaseName'))]" ],
+			"properties":
+			{
+				"resource":{
+					"id":  "[parameters('containerName')]",
+					"partitionKey": {
+						"paths": [
+						"/vin"
+						],
+						"kind": "Hash"
+					},
+					"indexingPolicy": {
+						"indexingMode": "consistent",
+						"includedPaths": [{
+								"path": "/*"
+							}
+						],
+						"excludedPaths": [{
+								"path": "/myPathToNotIndex/*"
+							}
+						]
+					}
+				}
+			}
+		}
+    ],
+    "outputs": {}
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "keyVaultName": {
+      "value": "aiadpmkv"
+    },
+    "objectId": {
+      "value": "6f4821a3-b668-47f4-9d6f-1409e8fbdbcb"
+    },
+    "secretName": {
+      "value": "GEN-UNIQUE"
+    },
+    "secretValue": {
+      "value": "GEN-UNIQUE"
+    },
+    "secrets":{
+        "value":[
+                {
+                    "name": "firstSubnet",
+                    "value": "10.0.0.0/24"
+                },
+                {
+                    "name":"secondSubnet",
+                    "value":"10.0.1.0/24"
+                }
+            ]
+    }
+  }
+}

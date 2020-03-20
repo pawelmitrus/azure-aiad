@@ -1,0 +1,59 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string"
+        },
+        "storageAccountName": {
+            "type": "string"
+        },
+        "accountType": {
+            "type": "string"
+        },
+        "kind": {
+            "type": "string"
+        },
+        "accessTier": {
+            "type": "string"
+        },
+        "supportsHttpsTrafficOnly": {
+            "type": "bool"
+        },
+        "isHnsEnabled": {
+            "type": "bool"
+        },
+        "largeFileSharesState": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "v_storageAccountName": "[concat(toLower(parameters('storageAccountName')), uniqueString(resourceGroup().id))]"
+    },
+    "resources": [
+        {
+            "name": "[variables('v_storageAccountName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "location": "[parameters('location')]",
+            "properties": {
+                "accessTier": "[parameters('accessTier')]",
+                "supportsHttpsTrafficOnly": "[parameters('supportsHttpsTrafficOnly')]",
+                "isHnsEnabled": "[parameters('isHnsEnabled')]",
+                "largeFileSharesState": "[parameters('largeFileSharesState')]"
+            },
+            "dependsOn": [],
+            "sku": {
+                "name": "[parameters('accountType')]"
+            },
+            "kind": "[parameters('kind')]",
+            "tags": {}
+        }
+    ],
+    "outputs": {
+        "storageName": {
+            "type": "string",
+            "value": "[variables('v_storageAccountName')]"
+        }
+    }
+}
