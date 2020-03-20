@@ -4,6 +4,7 @@
 
 ### Used to deliver labs
 lab 1 - https://github.com/solliancenet/tech-immersion-data-ai/tree/master/data-exp6
+
 lab 2 - https://github.com/SpektraSystems/Analytics-Airlift/blob/master/ModernDataWarehouse-Analytics-In-A-Day.md
 
 ### Info
@@ -18,7 +19,7 @@ Script initializes environment for delivery above hands-on labs. However it requ
     - adls
     - blob
     - databricks (create and run cluster before that)
-    
+
 
 ## Pre-requisites / Dependencies
 - `az login` firstly
