@@ -42,10 +42,13 @@
         }
       }
     },
-    "variables": {},
+    "variables": {
+      "v_dataWarehouseName": "[concat(toLower(parameters('dataWarehouseName')), uniqueString(resourceGroup().id))]",
+      "v_sqlServerName": "[concat(toLower(parameters('sqlServerName')), uniqueString(resourceGroup().id))]"
+    },
     "resources": [
       {
-        "name": "[parameters('sqlServerName')]",
+        "name": "[variables('v_sqlServerName')]",
         "type": "Microsoft.Sql/servers",
         "apiVersion": "2015-05-01-preview",
         "location": "[parameters('location')]",
@@ -61,14 +64,14 @@
                 "name": "[parameters('serviceLevelObjective')]",
                 "tier": "DataWarehouse"
             },
-            "name": "[parameters('dataWarehouseName')]",
+            "name": "[variables('v_dataWarehouseName')]",
             "apiVersion": "2017-10-01-preview",
             "location": "[parameters('location')]",
             "properties": {
               "collation": "SQL_Latin1_General_CP1_CI_AS"
             },
             "dependsOn": [
-              "[parameters('sqlServerName')]"
+              "[variables('v_sqlServerName')]"
             ]
           }
         ]

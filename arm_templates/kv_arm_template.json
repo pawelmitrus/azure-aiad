@@ -110,10 +110,14 @@
     }
     
   },
+  "variables": {
+    "v_keyVaultName": "[concat(toLower(parameters('keyVaultName')), uniqueString(resourceGroup().id))]"
+
+  },
   "resources": [
     {
       "type": "Microsoft.KeyVault/vaults",
-      "name": "[parameters('keyVaultName')]",
+      "name": "[variables('v_keyVaultName')]",
       "apiVersion": "2018-02-14",
       "location": "[parameters('location')]",
       "properties": {
@@ -143,11 +147,11 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "name": "[concat(parameters('keyVaultName'), '/', parameters('secretName'))]",
+      "name": "[concat(variables('v_keyVaultName'), '/', parameters('secretName'))]",
       "apiVersion": "2018-02-14",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+        "[resourceId('Microsoft.KeyVault/vaults', variables('v_keyVaultName'))]"
       ],
       "properties": {
         "value": "[parameters('secretValue')]"
@@ -155,11 +159,11 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "name": "[concat(parameters('keyVaultName'), '/', parameters('secrets')[copyIndex()].name)]",
+      "name": "[concat(variables('v_keyVaultName'), '/', parameters('secrets')[copyIndex()].name)]",
       "apiVersion": "2018-02-14",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+        "[resourceId('Microsoft.KeyVault/vaults', variables('v_keyVaultName'))]"
       ],
       "properties": {
         "value": "[parameters('secrets')[copyIndex()].value]"
@@ -169,5 +173,11 @@
         "count": 2
     }
     }
-  ]
+  ],
+  "outputs": {
+      "kvName": {
+          "type": "string",
+          "value": "[variables('v_keyVaultName')]"
+      }
+  }
 }

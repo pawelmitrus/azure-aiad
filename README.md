@@ -5,6 +5,8 @@
 ### Used to deliver labs
 lab 1 - https://github.com/solliancenet/tech-immersion-data-ai/tree/master/data-exp6
 
+lab 1 (short on-line workshop) - 
+
 lab 2 - https://github.com/SpektraSystems/Analytics-Airlift/blob/master/ModernDataWarehouse-Analytics-In-A-Day.md
 
 ### Info

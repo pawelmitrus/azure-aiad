@@ -24,13 +24,15 @@
             "type": "string"
         }
     },
-    "variables": {},
+    "variables": {
+        "v_name": "[concat(toLower(parameters('name')), uniqueString(resourceGroup().id))]"
+    },
     "resources": [
         {
             "apiVersion": "2019-12-12",
             "kind": "GlobalDocumentDB",
             "type": "Microsoft.DocumentDb/databaseAccounts",
-            "name": "[parameters('name')]",
+            "name": "[variables('v_name')]",
             "location": "[parameters('location')]",
             "properties": {
                 "databaseAccountOfferType": "Standard",
@@ -48,9 +50,9 @@
         },
         {
 			"type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
-			"name": "[concat(parameters('name'), '/', parameters('databaseName'))]",
+			"name": "[concat(variables('v_name'), '/', parameters('databaseName'))]",
 			"apiVersion": "2019-08-01",
-			"dependsOn": [ "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('name'))]" ],
+			"dependsOn": [ "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('v_name'))]" ],
 			"properties":{
 				"resource":{
 					"id": "[parameters('databaseName')]"
@@ -60,9 +62,9 @@
         },
         {
 			"type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
-			"name": "[concat(parameters('name'), '/', parameters('databaseName'), '/', parameters('containerName'))]",
+			"name": "[concat(variables('v_name'), '/', parameters('databaseName'), '/', parameters('containerName'))]",
 			"apiVersion": "2019-08-01",
-			"dependsOn": [ "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', parameters('name'), parameters('databaseName'))]" ],
+			"dependsOn": [ "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('v_name'), parameters('databaseName'))]" ],
 			"properties":
 			{
 				"resource":{
@@ -88,5 +90,10 @@
 			}
 		}
     ],
-    "outputs": {}
+    "outputs": {
+        "cosmosdbName": {
+            "type": "string",
+            "value": "[variables('v_name')]"
+        }
+    }
 }

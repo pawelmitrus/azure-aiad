@@ -10,7 +10,7 @@
 ################################################################################################################
 
 set -e
-rg="aiad-pm-rg"
+rg="aiad-test-rg"
 az_sp_name="tech-immersion-sp"
 
 location=`az group show --name $rg --query location -o tsv`
@@ -26,11 +26,13 @@ cosmodbname="aiadpmcosmos"
 blobname="aiadblob"
 kvname="aiadpmkv"
 databricksName="aiadpmdb"
+sqlServerName="tech-immersion-sql-srv"
+dataWarehouseName="tech-immersion-sql-dw"
 
 ################################################################################################################
 
-echo -e "-- Create service principal account -- \n"
-az ad sp create-for-rbac -n $az_sp_name --scopes /subscriptions/$sub_id/resourceGroups/$rg -o json > service_principal.json
+#echo -e "-- Create service principal account -- \n"
+#az ad sp create-for-rbac -n $az_sp_name --scopes /subscriptions/$sub_id/resourceGroups/$rg -o json > service_principal.json
 
 ################################################################################################################
 
@@ -91,6 +93,9 @@ output=`az group deployment create \
 
 adf_name=`echo $output | jq '.properties.outputs.adfName.value' -r` #`az resource list --query '[].name' | grep tech-immersion-data-factory`
 
+
+blob_storage_cs=`az storage account show-connection-string --name $blob_name --resource-group $rg --output tsv`
+
 echo -e "-- Deploy pipeline into Azure Data Factory -- \n"
 az group deployment create \
   --resource-group $rg \
@@ -98,31 +103,35 @@ az group deployment create \
   --parameters adf_pipelines/adf_arm_pipeline_template_parameters.json \
                 "factoryName=$adf_name" \
                 "ADLSGen2_properties_typeProperties_url=https://$adlsname.dfs.core.windows.net" \
-                "AzureBlobStorage_connectionString='DefaultEndpointsProtocol=https;AccountName=$blob_name;EndpointSuffix=core.windows.net;'"
+                "AzureBlobStorage_connectionString=$blob_storage_cs"
 
 ################################################################################################################
 
 echo -e "-- Cosmos DB deployment -- \n"
 
-az group deployment create \
-  --resource-group $rg \
-  --template-file arm_templates/cosmos_arm_template.json \
-  --parameters arm_templates/cosmos_arm_template_parameters.json \
-                "name=$cosmodbname" \
-                "location=$location"
+# output= `az group deployment create \
+#   --resource-group $rg \
+#   --template-file arm_templates/cosmos_arm_template.json \
+#   --parameters arm_templates/cosmos_arm_template_parameters.json \
+#                 "name=$cosmodbname" \
+#                 "location=$location"`
 
-cosmo_primary_key=`az cosmosdb keys list -g $rg --name $cosmodbname  -o json | jq '.primaryMasterKey' -r`
-cosmo_uri=`az cosmosdb show -g $rg --name $cosmodbname -o json | jq '.documentEndpoint' -r`
+# cosmosdb_name=`echo $output | jq '.properties.outputs.cosmosdbName.value' -r`
+
+# cosmo_primary_key=`az cosmosdb keys list -g $rg --name $cosmosdb_name  -o json | jq '.primaryMasterKey' -r`
+# cosmo_uri=`az cosmosdb show -g $rg --name $cosmosdb_name -o json | jq '.documentEndpoint' -r`
 
 ################################################################################################################
 
 echo -e "-- Key Vault deployment -- \n"
 
-az group deployment create \
+output=`az group deployment create \
   --resource-group $rg \
   --template-file arm_templates/kv_arm_template.json \
   --parameters arm_templates/kv_arm_template_parameters.json \
-                "keyVaultName=$kvname"
+                "keyVaultName=$kvname"`
+
+kv_name=`echo $output | jq '.properties.outputs.kvName.value' -r`
 
 echo -e "-- Set policy for service principal -- \n"
 
@@ -133,7 +142,7 @@ az_sp_object_id=`az ad sp show --id $az_sp_id -o json | jq '.objectId' -r`
 
 
 az keyvault set-policy \
-  --name $kvname \
+  --name $kv_name \
   --object-id $az_sp_object_id \
   --secret-permissions list set
 
@@ -143,64 +152,66 @@ az login --service-principal -u $az_sp_id --password $az_sp_pwd --tenant $az_sp_
 echo -e "-- Set secrets in key vault -- \n"
 az keyvault secret set \
   --name "ADLS-Gen2-Account-Name" \
-  --vault-name $kvname \
+  --vault-name $kv_name \
   --value "$adlsname"
 
 az keyvault secret set \
   --name "Azure-Tenant-ID" \
-  --vault-name $kvname \
+  --vault-name $kv_name \
   --value "$tenant_id"
 
 az keyvault secret set \
   --name "ContosoAuto-SP-Client-ID" \
-  --vault-name $kvname \
-  --value "$sp_ap_id"
+  --vault-name $kv_name \
+  --value "$az_sp_id"
 
 az keyvault secret set \
   --name "ContosoAuto-SP-Client-Key" \
-  --vault-name $kvname \
+  --vault-name $kv_name \
   --value "$az_sp_pwd"
 
-az keyvault secret set \
-  --name "Cosmos-DB-Key" \
-  --vault-name $kvname \
-  --value "$cosmo_primary_key"
+# az keyvault secret set \
+#   --name "Cosmos-DB-Key" \
+#   --vault-name $kv_name \
+#   --value "$cosmo_primary_key"
 
-az keyvault secret set \
-  --name "Cosmos-DB-Uri" \
-  --vault-name $kvname \
-  --value "$cosmo_uri"
+# az keyvault secret set \
+#   --name "Cosmos-DB-Uri" \
+#   --vault-name $kv_name \
+#   --value "$cosmo_uri"
 
 az keyvault secret set \
   --name "Sql-Dw-Password" \
-  --vault-name $kvname \
+  --vault-name $kv_name \
   --value 'Password.1!!'
 
 az keyvault secret set \
   --name "Sql-Dw-Server-Name" \
-  --vault-name $kvname \
+  --vault-name $kv_name \
   --value 'tech-immersion-sql-srv'
 
 az keyvault secret set \
   --name "Storage-Account-Key" \
-  --vault-name $kvname \
+  --vault-name $kv_name \
   --value "$blob_primary_key"
 
 az keyvault secret set \
   --name "Storage-Account-Name" \
-  --vault-name $kvname \
+  --vault-name $kv_name \
   --value "$blob_name"
 
 ################################################################################################################
 
 echo -e "-- Databricks  deployment -- \n"
-az group deployment create \
+output=`z group deployment create \
   --resource-group $rg \
   --template-file arm_templates/databricks_arm_template.json \
   --parameters arm_templates/databricks_arm_template_parameters.json \
-                "workspaceName=$databricksName"
+                "workspaceName=$databricksName"`
 
-until databricks configure --token; do echo "Error msg, waiting too long. Please provide input again"; sleep 2; done
+databricks_name=`echo $output | jq '.properties.outputs.workspace.value' -r`
+
+until databricks configure --token; do echo "Error msg, waiting too long. Please provide input again"; sleep 15; done
 
 # Example:
 # - Databricks Host: https://northeurope.azuredatabricks.net/
@@ -228,6 +239,8 @@ echo -e "-- SQL Data Warehouse deployment -- \n"
 az group deployment create \
   --resource-group $rg \
   --template-file arm_templates/sqldw_arm_template.json \
-  --parameters arm_templates/sqldw_arm_template_parameters.json  
+  --parameters arm_templates/sqldw_arm_template_parameters.json \
+              "dataWarehouseName=$dataWarehouseName"  \
+              "sqlServerName=$sqlServerName"
 
 ################################################################################################################
