@@ -109,17 +109,59 @@ az group deployment create \
 
 echo -e "-- Cosmos DB deployment -- \n"
 
-# output= `az group deployment create \
-#   --resource-group $rg \
-#   --template-file arm_templates/cosmos_arm_template.json \
-#   --parameters arm_templates/cosmos_arm_template_parameters.json \
-#                 "name=$cosmodbname" \
-#                 "location=$location"`
+output= `az group deployment create \
+  --resource-group $rg \
+  --template-file arm_templates/cosmos_arm_template.json \
+  --parameters arm_templates/cosmos_arm_template_parameters.json \
+                "name=$cosmodbname" \
+                "location=$location"`
 
-# cosmosdb_name=`echo $output | jq '.properties.outputs.cosmosdbName.value' -r`
+cosmosdb_name=`echo $output | jq '.properties.outputs.cosmosdbName.value' -r`
 
-# cosmo_primary_key=`az cosmosdb keys list -g $rg --name $cosmosdb_name  -o json | jq '.primaryMasterKey' -r`
-# cosmo_uri=`az cosmosdb show -g $rg --name $cosmosdb_name -o json | jq '.documentEndpoint' -r`
+cosmo_primary_key=`az cosmosdb keys list -g $rg --name $cosmosdb_name  -o json | jq '.primaryMasterKey' -r`
+cosmo_uri=`az cosmosdb show -g $rg --name $cosmosdb_name -o json | jq '.documentEndpoint' -r`
+
+################################################################################################################
+
+echo -e "-- SQL Data Warehouse deployment -- \n"
+az group deployment create \
+  --resource-group $rg \
+  --template-file arm_templates/sqldw_arm_template.json \
+  --parameters arm_templates/sqldw_arm_template_parameters.json \
+              "dataWarehouseName=$dataWarehouseName"  \
+              "sqlServerName=$sqlServerName"
+
+################################################################################################################
+
+echo -e "-- Databricks  deployment -- \n"
+output=`az group deployment create \
+  --resource-group $rg \
+  --template-file arm_templates/databricks_arm_template.json \
+  --parameters arm_templates/databricks_arm_template_parameters.json \
+                "workspaceName=$databricksName"`
+
+databricks_name=`echo $output | jq '.properties.outputs.workspace.value' -r`
+
+until databricks configure --token; do echo "Error msg, waiting too long. Please provide input again"; sleep 15; done
+
+# Example:
+# - Databricks Host: https://northeurope.azuredatabricks.net/
+# - token: xxx
+
+echo -e "-- Create Databricks cluster -- \n"
+databricks clusters create --json-file 'databricks_files/databricks_cluster.json' | jq '.cluster_id' -r > id
+databricks_id=`cat id`
+
+databricks libraries install --cluster-id $databricks_id --maven-coordinates com.microsoft.azure:azure-cosmosdb-spark_2.4.0_2.11:1.3.5
+
+echo -e "-- Upload cluster setup notebook -- \n"
+databricks workspace import databricks_files/Tech-Immersion.dbc -l python /Users/$databricks_account/Tech-Immersion -f dbc
+
+# Not required:
+# echo -e "-- Create and run job for 'Tech-Immersion.dbc' notebook -- \n"
+# databricks_job=`databricks jobs create --json-file 'databricks_job.json' | jq '.job_id'`
+# databricks jobs run-now --job-id $databricks_job
+
 
 ################################################################################################################
 
@@ -170,15 +212,15 @@ az keyvault secret set \
   --vault-name $kv_name \
   --value "$az_sp_pwd"
 
-# az keyvault secret set \
-#   --name "Cosmos-DB-Key" \
-#   --vault-name $kv_name \
-#   --value "$cosmo_primary_key"
+az keyvault secret set \
+  --name "Cosmos-DB-Key" \
+  --vault-name $kv_name \
+  --value "$cosmo_primary_key"
 
-# az keyvault secret set \
-#   --name "Cosmos-DB-Uri" \
-#   --vault-name $kv_name \
-#   --value "$cosmo_uri"
+az keyvault secret set \
+  --name "Cosmos-DB-Uri" \
+  --vault-name $kv_name \
+  --value "$cosmo_uri"
 
 az keyvault secret set \
   --name "Sql-Dw-Password" \
@@ -200,47 +242,3 @@ az keyvault secret set \
   --vault-name $kv_name \
   --value "$blob_name"
 
-################################################################################################################
-
-echo -e "-- Databricks  deployment -- \n"
-output=`z group deployment create \
-  --resource-group $rg \
-  --template-file arm_templates/databricks_arm_template.json \
-  --parameters arm_templates/databricks_arm_template_parameters.json \
-                "workspaceName=$databricksName"`
-
-databricks_name=`echo $output | jq '.properties.outputs.workspace.value' -r`
-
-until databricks configure --token; do echo "Error msg, waiting too long. Please provide input again"; sleep 15; done
-
-# Example:
-# - Databricks Host: https://northeurope.azuredatabricks.net/
-# - token: xxx
-
-echo -e "-- Create Databricks cluster -- \n"
-databricks clusters create --json-file 'databricks_files/databricks_cluster.json' | jq '.cluster_id' -r > id
-databricks_id=`cat id`; rm -f id
-
-databricks libraries install --cluster-id $databricks_id --maven-coordinates com.microsoft.azure:azure-cosmosdb-spark_2.4.0_2.11:1.3.5
-
-echo -e "-- Upload cluster setup notebook -- \n"
-databricks workspace import databricks_files/Tech-Immersion.dbc -l python /Users/$databricks_account/Tech-Immersion -f dbc
-
-# Not required:
-# echo -e "-- Create and run job for 'Tech-Immersion.dbc' notebook -- \n"
-# databricks_job=`databricks jobs create --json-file 'databricks_job.json' | jq '.job_id'`
-# databricks jobs run-now --job-id $databricks_job
-
-
-################################################################################################################
-########################   Waiting for Lingaro subscription fix (Azure Synapse)   ##############################
-
-echo -e "-- SQL Data Warehouse deployment -- \n"
-az group deployment create \
-  --resource-group $rg \
-  --template-file arm_templates/sqldw_arm_template.json \
-  --parameters arm_templates/sqldw_arm_template_parameters.json \
-              "dataWarehouseName=$dataWarehouseName"  \
-              "sqlServerName=$sqlServerName"
-
-################################################################################################################

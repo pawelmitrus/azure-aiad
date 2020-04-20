@@ -28,7 +28,7 @@
     }
   },
   "variables": {
-    "v_workspaceName" : "[concat(parameters('workspaceName')), uniqueString(resourceGroup().id))]",
+    "v_workspaceName" : "[concat(parameters('workspaceName'), uniqueString(resourceGroup().id))]",
     "managedResourceGroupName": "[concat('databricks-rg-', parameters('workspaceName'), '-', uniqueString(parameters('workspaceName'), resourceGroup().id))]"
   },
   "resources": [
@@ -47,7 +47,7 @@
   ],
   "outputs": {
     "workspace": {
-      "type": "object",
+      "type": "string",
       "value": "[variables('v_workspaceName')]"
     }
   }
